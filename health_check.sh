@@ -38,6 +38,31 @@ print_status() {
   printf " %-14s %6s%-2s [%b%s%b]\n" "$label" "$value" "$unit" "$color" "$status" "$NC"
 }
 
+get_cpu_usage() {
+  local user1 nice1 system1 idle1 iowait1 irq1 softirq1 steal1 guest1 guest_nice1
+  local user2 nice2 system2 idle2 iowait2 irq2 softirq2 steal2 guest2 guest_nice2
+  local idle_all1 idle_all2 non_idle1 non_idle2 total1 total2 totald idled
+
+  read -r _ user1 nice1 system1 idle1 iowait1 irq1 softirq1 steal1 guest1 guest_nice1 < /proc/stat
+  sleep 1
+  read -r _ user2 nice2 system2 idle2 iowait2 irq2 softirq2 steal2 guest2 guest_nice2 < /proc/stat
+
+  idle_all1=$((idle1 + iowait1))
+  idle_all2=$((idle2 + iowait2))
+  non_idle1=$((user1 + nice1 + system1 + irq1 + softirq1 + steal1))
+  non_idle2=$((user2 + nice2 + system2 + irq2 + softirq2 + steal2))
+  total1=$((idle_all1 + non_idle1))
+  total2=$((idle_all2 + non_idle2))
+  totald=$((total2 - total1))
+  idled=$((idle_all2 - idle_all1))
+
+  if [ "$totald" -gt 0 ]; then
+    echo "scale=1; ($totald - $idled) * 100 / $totald" | bc
+  else
+    echo "0.0"
+  fi
+}
+
 echo ""
 echo -e "${BOLD}============================================${NC}"
 echo -e "${BOLD} SERVER HEALTH CHECK REPORT${NC}"
@@ -49,9 +74,8 @@ echo -e "${BOLD}============================================${NC}"
 echo ""
 
 echo -e "${BOLD}[ CPU ]${NC}"
-cpu_idle=$(top -bn1 | awk -F',' '/Cpu\(s\)|%Cpu/ {for(i=1;i<=NF;i++) if($i ~ / id/){gsub(/[^0-9.]/, "", $i); print $i; exit}}')
-if [ -n "${cpu_idle:-}" ]; then
-  cpu_used=$(echo "scale=1; 100 - $cpu_idle" | bc)
+cpu_used=$(get_cpu_usage)
+if [ -n "${cpu_used:-}" ]; then
   print_status "CPU Usage" "$cpu_used" "$CPU_WARN" "$CPU_CRIT" "%"
 else
   echo -e " CPU Usage: ${RED}Could not read${NC}"
@@ -96,4 +120,3 @@ echo -e "${BOLD}============================================${NC}"
 echo -e "${BOLD} CHECK COMPLETE${NC}"
 echo -e "${BOLD}============================================${NC}"
 echo ""
-

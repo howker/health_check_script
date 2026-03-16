@@ -6,7 +6,7 @@ A simple Linux server health check script for first-line infrastructure support 
 
 | Check | Source | Thresholds |
 |-------|--------|-----------|
-| CPU usage | `top` | Warning: 70%, Critical: 90% |
+| CPU usage | `/proc/stat` | Warning: 70%, Critical: 90% |
 | RAM usage | `/proc/meminfo` | Warning: 75%, Critical: 90% |
 | Disk usage | `df` for mounted filesystems | Warning: 80%, Critical: 95% |
 | Uptime | `uptime -p`, `/proc/loadavg` | Informational |
@@ -19,7 +19,6 @@ Status output is color-coded:
 ## Requirements
 
 - `bash`
-- `top`
 - `df`
 - `bc`
 
@@ -41,7 +40,7 @@ chmod +x health_check.sh
 Example cron entry:
 
 ```bash
-*/30 * * * * /path/to/health_check.sh >> /var/log/health_check.log 2>&1
+*/30 * * * * /root/health_check_script/health_check.sh >> /var/log/health_check.log 2>&1
 ```
 
 ## Portfolio note
