@@ -104,6 +104,35 @@ df -h --output=target,pcent,size,used,avail -x tmpfs -x devtmpfs -x squashfs 2>/
   echo " Size: $size | Used: $used | Free: $avail"
 done
 
+
+
+
+echo ""
+echo -e "${BOLD}[ NETWORK ]${NC}"
+
+gateway_ip=$(ip route | awk '/^default/ {print $3; exit}')
+
+if [ -n "${gateway_ip:-}" ]; then
+  if ping -c 1 -W 2 "$gateway_ip" >/dev/null 2>&1; then
+    gateway_rtt=$(ping -c 1 -W 2 "$gateway_ip" 2>/dev/null | awk -F'time=' '/time=/{print $2}' | awk '{print $1}' | head -n1)
+    echo -e " Gateway: ${GREEN}UP${NC} (${gateway_ip}${gateway_rtt:+, ${gateway_rtt} ms})"
+  else
+    echo -e " Gateway: ${RED}DOWN${NC} (${gateway_ip})"
+  fi
+else
+  echo -e " Gateway: ${YELLOW}UNKNOWN${NC} (default route not found)"
+fi
+
+if ping -c 1 -W 2 8.8.8.8 >/dev/null 2>&1; then
+  internet_rtt=$(ping -c 1 -W 2 8.8.8.8 2>/dev/null | awk -F'time=' '/time=/{print $2}' | awk '{print $1}' | head -n1)
+  echo -e " Internet: ${GREEN}UP${NC} (8.8.8.8${internet_rtt:+, ${internet_rtt} ms})"
+else
+  echo -e " Internet: ${RED}DOWN${NC} (8.8.8.8)"
+fi
+
+
+
+
 echo ""
 echo -e "${BOLD}[ UPTIME ]${NC}"
 uptime_str=$(uptime -p 2>/dev/null)
@@ -120,3 +149,4 @@ echo -e "${BOLD}============================================${NC}"
 echo -e "${BOLD} CHECK COMPLETE${NC}"
 echo -e "${BOLD}============================================${NC}"
 echo ""
+
